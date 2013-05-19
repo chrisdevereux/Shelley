@@ -37,13 +37,9 @@
 
 - (NSInvocation *) createInvocationForObject:(id)object{
     NSMethodSignature *signature = [object methodSignatureForSelector:_selector];
+    
     if( !signature )
         return nil;
-    
-    if( strcmp([signature methodReturnType], @encode(BOOL)) ){
-        [NSException raise:@"wrong return type" 
-					format:@"predicate does not return a BOOL"];
-    }
     
     NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:signature];
     
@@ -58,6 +54,7 @@
 #endif
 	
 	[invocation setSelector:_selector];
+    [invocation setTarget:object];
 	
 	char invocationBuffer[300]; //let's hope we don't get asked to invoke a method with more than 28 arguments.
 	
@@ -86,14 +83,49 @@
     NSInvocation *invocation = [self createInvocationForObject:view];
     if( !invocation )
         return [NSArray array];
-     
-    [invocation invokeWithTarget:view];
+    
+    if ( strstr([[invocation methodSignature] methodReturnType], @encode(id)) ) {
+        return [self invokeArrayFilter:invocation];
+    }
+    else if( strcmp([[invocation methodSignature] methodReturnType], @encode(BOOL)) == 0 ) {
+        return [self invokePredicateFilter:invocation withView:view];
+    }
+    else {
+        [NSException raise:@"wrong return type"
+					format:@"predicate does not return a BOOL or NSArray*"];
+        return nil;
+    }
+}
+
+- (NSArray *)invokePredicateFilter:(NSInvocation *)invocation withView:(id)view
+{
+    [invocation invoke];
     BOOL predicatePassed = [self extractBooleanReturnValueFromInvocation:invocation];
     
     if( predicatePassed )
         return [NSArray arrayWithObject:view];
     else
         return [NSArray array];
+}
+
+- (NSArray *)invokeArrayFilter:(NSInvocation *)invocation
+{
+    [invocation invoke];
+    
+    __unsafe_unretained id result;
+    [invocation getReturnValue:&result];
+    
+    if (!result) {
+        return [NSArray array];
+    }
+    if ([result isKindOfClass:[NSArray class]]) {
+        return result;
+    }
+    else {
+        [NSException raise:@"wrong return type"
+					format:@"predicate does not return a BOOL or NSArray*"];
+        return nil;
+    }
 }
 
 @end
