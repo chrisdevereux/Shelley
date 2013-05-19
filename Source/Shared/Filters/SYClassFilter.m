@@ -56,6 +56,12 @@
             [descendants addObjectsFromArray: [self allDescendantsOf: item]];
         }
     }
+    else if ([view isKindOfClass: [NSClipView class]])
+    {
+        NSView *documentView = [((NSClipView*) view) documentView];
+        [descendants addObject:documentView];
+        [descendants addObjectsFromArray:[self allDescendantsOf:documentView]];
+    }
     else if ([view isKindOfClass: [NSView class]])
     {
         for (NSView *subview in [((NSView*) view) subviews]) {
