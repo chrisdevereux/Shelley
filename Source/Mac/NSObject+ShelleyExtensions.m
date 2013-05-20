@@ -75,6 +75,10 @@ BOOL substringMatch(NSString *actualString, NSString *expectedSubstring){
     return substringMatch([self stringValue], expectedText);
 }
 
+- (BOOL) exactText:(NSString *)exactText {
+    return [[self stringValue] isEqualToString:exactText];
+}
+
 - (BOOL) placeholder:(NSString *)expectedPlaceholder{
     return [self text: expectedPlaceholder];
 }
